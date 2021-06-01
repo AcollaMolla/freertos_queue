@@ -4,22 +4,48 @@ static const BaseType_t app_cpu = 0;
 static const BaseType_t app_cpu = 1;
 #endif
 
+static const int led_pin = LED_BUILTIN;
 static const uint8_t queue_len = 5;
+static const uint8_t buf_len = 255;
 static QueueHandle_t queue_1;
 
 void controlBlinkRate(void *parameter){
+  pinMode(led_pin, OUTPUT);
+  int rate = 1000;
   
+  while(1){
+    if(xQueueReceive(queue_1, (void *)&rate, 0)==pdTRUE){}
+    Serial.print("Blinking for ");
+    Serial.print(rate);
+    Serial.println(" ms");
+    digitalWrite(led_pin, HIGH);
+    vTaskDelay(rate/portTICK_PERIOD_MS);
+    digitalWrite(led_pin, LOW);
+  }
 }
 
-void printMessages(void *parameter){
-  int item;
+void readUserInput(void *parameter){
+  char c;
+  char buf[buf_len];
+  uint8_t idx = 0;
 
   while(1){
-    if(xQueueReceive(queue_1, (void *)&item, 0)==pdTRUE){
-      //Serial.println(item);
+    if(Serial.available() > 0){
+      c = Serial.read();
+      if(idx < buf_len-1){
+        buf[idx] = c;
+        idx++;
+      }
+      if(c == '\n'){
+        buf[idx-1] = '\0';
+        Serial.print("Echo: ");
+        Serial.println(buf);
+        //xQueueSend(queue_1, (void *)&buf, 0);
+
+        memset(buf, 0, buf_len);
+        idx = 0;
+      }
     }
-    Serial.println(item);
-    vTaskDelay(500 / portTICK_PERIOD_MS);
   }
 }
 
@@ -27,14 +53,22 @@ void setup() {
   Serial.begin(115200);
   vTaskDelay(1000/portTICK_PERIOD_MS);
 
-  queue_1 = xQueueCreate(msg_queue_len, sizeof(int));
+  queue_1 = xQueueCreate(queue_len, sizeof(char[255]));
+
+  xTaskCreatePinnedToCore(readUserInput,
+    "Read user input",
+    1024,
+    NULL,
+    1,
+    NULL,
+    app_cpu);
 }
 
 void loop() {
-  static int num = 100;
-  if(xQueueSend(msg_queue, (void *)&num, 10) != pdTRUE){
+  /*static int num = 100;
+  if(xQueueSend(queue_1, (void *)&num, 10) != pdTRUE){
     Serial.println("Queue full!");
   }
   num *= 2;
-  vTaskDelay(10000/portTICK_PERIOD_MS);
+  vTaskDelay(10000/portTICK_PERIOD_MS);*/
 }
