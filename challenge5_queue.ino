@@ -9,6 +9,35 @@ static const uint8_t queue_len = 5;
 static const uint8_t buf_len = 255;
 static QueueHandle_t queue_1;
 
+bool checkStringForDelayCommand(char buf[buf_len]){
+  int sum = 0;
+  for(int i=0;i<5;i++){
+    sum += (int)buf[i];
+  }
+
+  if(sum == 527)return true;
+  return false;
+}
+
+void parseDelayCommand(char buf[buf_len]){
+  int delay = 0;
+  int factor = 0;
+  int numbers[4] = {0};
+
+  for(int i=5;i<=9;i++){
+    if((int)buf[i] < 58 && (int)buf[i] > 47){
+      //Serial.println((int)buf[i] - 48);
+      numbers[factor] = ((int)buf[i]) - 48;
+      factor++;
+    }
+  }
+
+  Serial.println(numbers[0]);
+  Serial.println(numbers[1]);
+  Serial.println(numbers[2]);
+  Serial.println(numbers[3]);
+}
+
 void controlBlinkRate(void *parameter){
   pinMode(led_pin, OUTPUT);
   int rate = 1000;
@@ -38,8 +67,15 @@ void readUserInput(void *parameter){
       }
       if(c == '\n'){
         buf[idx-1] = '\0';
-        Serial.print("Echo: ");
-        Serial.println(buf);
+        if(checkStringForDelayCommand(buf)){
+          Serial.println("Delay command!");
+          parseDelayCommand(buf);
+        }
+        else{
+          Serial.print("Echo: ");
+          Serial.println(buf);
+        }
+
         //xQueueSend(queue_1, (void *)&buf, 0);
 
         memset(buf, 0, buf_len);
