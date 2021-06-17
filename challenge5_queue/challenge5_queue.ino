@@ -19,10 +19,10 @@ bool checkStringForDelayCommand(char buf[buf_len]){
   return false;
 }
 
-void parseDelayCommand(char buf[buf_len]){
+int parseDelayCommand(char buf[buf_len]){
   int delay = 0;
   int factor = 0;
-  int numbers[4] = {0};
+  int numbers[4] = {-1, -1, -1, -1};
 
   for(int i=5;i<=9;i++){
     if((int)buf[i] < 58 && (int)buf[i] > 47){
@@ -36,6 +36,19 @@ void parseDelayCommand(char buf[buf_len]){
   Serial.println(numbers[1]);
   Serial.println(numbers[2]);
   Serial.println(numbers[3]);
+
+  delay = numbers[0];
+  if(delay==0)
+    return 1000;
+  else{
+    for(int i=1;i<4;i++){
+      if(numbers[i] >= 0){
+        delay *= 10;
+        delay += numbers[i];
+      }
+    }
+  }
+  return delay;
 }
 
 void controlBlinkRate(void *parameter){
@@ -57,6 +70,7 @@ void readUserInput(void *parameter){
   char c;
   char buf[buf_len];
   uint8_t idx = 0;
+  int delay = 1000;
 
   while(1){
     if(Serial.available() > 0){
@@ -69,7 +83,9 @@ void readUserInput(void *parameter){
         buf[idx-1] = '\0';
         if(checkStringForDelayCommand(buf)){
           Serial.println("Delay command!");
-          parseDelayCommand(buf);
+          delay = parseDelayCommand(buf);
+          Serial.print("Parsed delay: ");
+          Serial.println(delay);
         }
         else{
           Serial.print("Echo: ");
