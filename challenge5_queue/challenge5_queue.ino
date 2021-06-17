@@ -28,20 +28,15 @@ int parseDelayCommand(char buf[buf_len]){
 
   for(int i=5;i<=10;i++){
     if((int)buf[i] < 58 && (int)buf[i] > 47){
-      //Serial.println((int)buf[i] - 48);
       numbers[factor] = ((int)buf[i]) - 48;
       factor++;
     }
   }
-
-  Serial.println(numbers[0]);
-  Serial.println(numbers[1]);
-  Serial.println(numbers[2]);
-  Serial.println(numbers[3]);
-
   delay = numbers[0];
-  if(delay==0)
-    return 1000;
+  if(delay <= 0){
+    Serial.println("[ERROR]Value must be > 0!");
+    return blink_rate; 
+  }
   else{
     for(int i=1;i<5;i++){
       if(numbers[i] >= 0){
@@ -53,27 +48,11 @@ int parseDelayCommand(char buf[buf_len]){
   return delay;
 }
 
-/*
-void controlBlinkRate(void *parameter){
-  pinMode(led_pin, OUTPUT);
-  int rate = 1000;
-  
-  while(1){
-    if(xQueueReceive(queue_1, (void *)&rate, 0)==pdTRUE){}
-    Serial.print("Blinking for ");
-    Serial.print(rate);
-    Serial.println(" ms");
-    digitalWrite(led_pin, HIGH);
-    vTaskDelay(rate/portTICK_PERIOD_MS);
-    digitalWrite(led_pin, LOW);
-  }
-}
-*/
 void ReadFromQueue1(void *parameter){
   int buf;
   while(1){
       if(xQueueReceive(queue_1, (void *)&buf, 0)==pdTRUE){
-        Serial.print("Received 'delay' cmd from Queue 1: ");
+        Serial.print("[INFO]Blink rate: ");
         Serial.println(buf);
         blink_rate = buf;
       }
@@ -87,10 +66,7 @@ void PrintFromQueue2(void *parameter){
   while(1){
     if(xQueueReceive(queue_2, (void *)&buf, 0)==pdTRUE){
       if(checkStringForDelayCommand(buf)){
-        Serial.println("Delay command!");
         delay = parseDelayCommand(buf);
-        Serial.print("Parsed delay: ");
-        Serial.println(delay);
         xQueueSend(queue_1, (void *)&delay, 0);
        }
       else{
@@ -162,10 +138,4 @@ void loop() {
   vTaskDelay(blink_rate/portTICK_PERIOD_MS);
   digitalWrite(led_pin, LOW);
   vTaskDelay(blink_rate/portTICK_PERIOD_MS);
-  /*static int num = 100;
-  if(xQueueSend(queue_1, (void *)&num, 10) != pdTRUE){
-    Serial.println("Queue full!");
-  }
-  num *= 2;
-  vTaskDelay(10000/portTICK_PERIOD_MS);*/
 }
