@@ -50,14 +50,19 @@ int parseDelayCommand(char buf[buf_len]){
 
 void BlinkLED(void *parameter){
   int count = 0;
-  String msg = "Blinked ";
+  char msg[9] = "Blinked ";
+  char msg2[8] = " times!";
+  char dest[31];
+  char countstr[16];
 
   while(1){
     if(count == 100){
-      msg = msg + "!";
-      xQueueSend(queue_2, (void *)&(msg), 0);
+      itoa(count, countstr, 10);
+      strcpy(dest, msg);
+      strcat(dest, countstr);
+      strcat(dest, msg2);
+      xQueueSend(queue_2, (void *)&(dest), 0);
       count = 0;
-      msg = "Blinked ";
     }
     pinMode(led_pin, OUTPUT);
     digitalWrite(led_pin, HIGH);
