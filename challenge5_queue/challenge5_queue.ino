@@ -48,14 +48,26 @@ int parseDelayCommand(char buf[buf_len]){
   return delay;
 }
 
+void BlinkLED(void *parameter){
+  int count = 0;
+  while(1){
+    pinMode(led_pin, OUTPUT);
+    digitalWrite(led_pin, HIGH);
+    vTaskDelay(blink_rate/portTICK_PERIOD_MS);
+    digitalWrite(led_pin, LOW);
+    vTaskDelay(blink_rate/portTICK_PERIOD_MS);
+  }
+}
+
 void ReadFromQueue1(void *parameter){
   int buf;
+  
   while(1){
-      if(xQueueReceive(queue_1, (void *)&buf, 0)==pdTRUE){
-        Serial.print("[INFO]Blink rate: ");
-        Serial.println(buf);
-        blink_rate = buf;
-      }
+    if(xQueueReceive(queue_1, (void *)&buf, 0)==pdTRUE){
+      Serial.print("[INFO]Blink rate: ");
+      Serial.println(buf);
+      blink_rate = buf;
+    }
   }
 }
 
@@ -130,12 +142,16 @@ void setup() {
   1,
   NULL,
   app_cpu);
+
+xTaskCreatePinnedToCore(BlinkLED,
+ "Blink LED",
+ 1024,
+ NULL,
+ 1,
+ NULL,
+ app_cpu);
 }
 
 void loop() {
-  pinMode(led_pin, OUTPUT);
-  digitalWrite(led_pin, HIGH);
-  vTaskDelay(blink_rate/portTICK_PERIOD_MS);
-  digitalWrite(led_pin, LOW);
-  vTaskDelay(blink_rate/portTICK_PERIOD_MS);
+
 }
