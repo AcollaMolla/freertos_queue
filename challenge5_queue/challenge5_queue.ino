@@ -8,6 +8,7 @@ static const int led_pin = LED_BUILTIN;
 static const uint8_t queue_len = 5;
 static const uint8_t buf_len = 255;
 static QueueHandle_t queue_1;
+static QueueHandle_t queue_2;
 
 bool checkStringForDelayCommand(char buf[buf_len]){
   int sum = 0;
@@ -66,6 +67,17 @@ void controlBlinkRate(void *parameter){
   }
 }
 
+void PrintFromQueue2(void *parameter){
+  char buf[buf_len];
+  
+  while(1){
+    if(xQueueReceive(queue_2, (void *)&buf, 0)==pdTRUE){
+      Serial.print("Echo: ");
+          Serial.println(buf);
+    }
+  }
+}
+
 void readUserInput(void *parameter){
   char c;
   char buf[buf_len];
@@ -88,11 +100,11 @@ void readUserInput(void *parameter){
           Serial.println(delay);
         }
         else{
-          Serial.print("Echo: ");
-          Serial.println(buf);
+          //Serial.print("Echo: ");
+          //Serial.println(buf);
         }
 
-        //xQueueSend(queue_1, (void *)&buf, 0);
+        xQueueSend(queue_2, (void *)&buf, 0);
 
         memset(buf, 0, buf_len);
         idx = 0;
@@ -106,6 +118,7 @@ void setup() {
   vTaskDelay(1000/portTICK_PERIOD_MS);
 
   queue_1 = xQueueCreate(queue_len, sizeof(char[255]));
+  queue_2 = xQueueCreate(queue_len, sizeof(char[255]));
 
   xTaskCreatePinnedToCore(readUserInput,
     "Read user input",
@@ -114,6 +127,14 @@ void setup() {
     1,
     NULL,
     app_cpu);
+
+  xTaskCreatePinnedToCore(PrintFromQueue2,
+   "Print user input stored in Queue 2",
+   1024,
+   NULL,
+   1,
+   NULL,
+   app_cpu);
 }
 
 void loop() {
