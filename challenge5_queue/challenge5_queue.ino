@@ -69,11 +69,20 @@ void controlBlinkRate(void *parameter){
 
 void PrintFromQueue2(void *parameter){
   char buf[buf_len];
+  int delay = 1000;
   
   while(1){
     if(xQueueReceive(queue_2, (void *)&buf, 0)==pdTRUE){
-      Serial.print("Echo: ");
-          Serial.println(buf);
+      if(checkStringForDelayCommand(buf)){
+        Serial.println("Delay command!");
+        delay = parseDelayCommand(buf);
+        Serial.print("Parsed delay: ");
+        Serial.println(delay);
+       }
+      else{
+        Serial.print("Echo: ");
+        Serial.println(buf);
+      }
     }
   }
 }
@@ -93,19 +102,7 @@ void readUserInput(void *parameter){
       }
       if(c == '\n'){
         buf[idx-1] = '\0';
-        if(checkStringForDelayCommand(buf)){
-          Serial.println("Delay command!");
-          delay = parseDelayCommand(buf);
-          Serial.print("Parsed delay: ");
-          Serial.println(delay);
-        }
-        else{
-          //Serial.print("Echo: ");
-          //Serial.println(buf);
-        }
-
         xQueueSend(queue_2, (void *)&buf, 0);
-
         memset(buf, 0, buf_len);
         idx = 0;
       }
