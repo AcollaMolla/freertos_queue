@@ -50,12 +50,21 @@ int parseDelayCommand(char buf[buf_len]){
 
 void BlinkLED(void *parameter){
   int count = 0;
+  String msg = "Blinked ";
+
   while(1){
+    if(count == 100){
+      msg = msg + "!";
+      xQueueSend(queue_2, (void *)&(msg), 0);
+      count = 0;
+      msg = "Blinked ";
+    }
     pinMode(led_pin, OUTPUT);
     digitalWrite(led_pin, HIGH);
     vTaskDelay(blink_rate/portTICK_PERIOD_MS);
     digitalWrite(led_pin, LOW);
     vTaskDelay(blink_rate/portTICK_PERIOD_MS);
+    count++;
   }
 }
 
@@ -145,7 +154,7 @@ void setup() {
 
 xTaskCreatePinnedToCore(BlinkLED,
  "Blink LED",
- 1024,
+ 1224,
  NULL,
  1,
  NULL,
