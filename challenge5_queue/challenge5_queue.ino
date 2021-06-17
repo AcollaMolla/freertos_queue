@@ -9,6 +9,7 @@ static const uint8_t queue_len = 5;
 static const uint8_t buf_len = 255;
 static QueueHandle_t queue_1;
 static QueueHandle_t queue_2;
+static int blink_rate = 1000;
 
 bool checkStringForDelayCommand(char buf[buf_len]){
   int sum = 0;
@@ -52,6 +53,7 @@ int parseDelayCommand(char buf[buf_len]){
   return delay;
 }
 
+/*
 void controlBlinkRate(void *parameter){
   pinMode(led_pin, OUTPUT);
   int rate = 1000;
@@ -66,7 +68,7 @@ void controlBlinkRate(void *parameter){
     digitalWrite(led_pin, LOW);
   }
 }
-
+*/
 void PrintFromQueue2(void *parameter){
   char buf[buf_len];
   int delay = 1000;
@@ -114,7 +116,7 @@ void setup() {
   Serial.begin(115200);
   vTaskDelay(1000/portTICK_PERIOD_MS);
 
-  queue_1 = xQueueCreate(queue_len, sizeof(char[255]));
+  queue_1 = xQueueCreate(queue_len, sizeof(int));
   queue_2 = xQueueCreate(queue_len, sizeof(char[255]));
 
   xTaskCreatePinnedToCore(readUserInput,
@@ -135,6 +137,11 @@ void setup() {
 }
 
 void loop() {
+  pinMode(led_pin, OUTPUT);
+  digitalWrite(led_pin, HIGH);
+  vTaskDelay(blink_rate/portTICK_PERIOD_MS);
+  digitalWrite(led_pin, LOW);
+  vTaskDelay(blink_rate/portTICK_PERIOD_MS);
   /*static int num = 100;
   if(xQueueSend(queue_1, (void *)&num, 10) != pdTRUE){
     Serial.println("Queue full!");
