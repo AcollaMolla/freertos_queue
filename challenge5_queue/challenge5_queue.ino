@@ -24,9 +24,9 @@ bool checkStringForDelayCommand(char buf[buf_len]){
 int parseDelayCommand(char buf[buf_len]){
   int delay = 0;
   int factor = 0;
-  int numbers[4] = {-1, -1, -1, -1};
+  int numbers[5] = {-1, -1, -1, -1, -1};
 
-  for(int i=5;i<=9;i++){
+  for(int i=5;i<=10;i++){
     if((int)buf[i] < 58 && (int)buf[i] > 47){
       //Serial.println((int)buf[i] - 48);
       numbers[factor] = ((int)buf[i]) - 48;
@@ -43,7 +43,7 @@ int parseDelayCommand(char buf[buf_len]){
   if(delay==0)
     return 1000;
   else{
-    for(int i=1;i<4;i++){
+    for(int i=1;i<5;i++){
       if(numbers[i] >= 0){
         delay *= 10;
         delay += numbers[i];
@@ -69,6 +69,17 @@ void controlBlinkRate(void *parameter){
   }
 }
 */
+void ReadFromQueue1(void *parameter){
+  int buf;
+  while(1){
+      if(xQueueReceive(queue_1, (void *)&buf, 0)==pdTRUE){
+        Serial.print("Received 'delay' cmd from Queue 1: ");
+        Serial.println(buf);
+        blink_rate = buf;
+      }
+  }
+}
+
 void PrintFromQueue2(void *parameter){
   char buf[buf_len];
   int delay = 1000;
@@ -80,6 +91,7 @@ void PrintFromQueue2(void *parameter){
         delay = parseDelayCommand(buf);
         Serial.print("Parsed delay: ");
         Serial.println(delay);
+        xQueueSend(queue_1, (void *)&delay, 0);
        }
       else{
         Serial.print("Echo: ");
@@ -134,6 +146,14 @@ void setup() {
    1,
    NULL,
    app_cpu);
+
+ xTaskCreatePinnedToCore(ReadFromQueue1,
+  "Adjust LED blink rate according to value in Queue 1",
+  1024,
+  NULL,
+  1,
+  NULL,
+  app_cpu);
 }
 
 void loop() {
