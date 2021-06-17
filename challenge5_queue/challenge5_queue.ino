@@ -49,7 +49,7 @@ int parseDelayCommand(char buf[buf_len]){
 }
 
 void BlinkLED(void *parameter){
-  int count = 0;
+  int count = 0, total_count = 0;
   char msg[9] = "Blinked ";
   char msg2[8] = " times!";
   char dest[31];
@@ -57,7 +57,8 @@ void BlinkLED(void *parameter){
 
   while(1){
     if(count == 100){
-      itoa(count, countstr, 10);
+      total_count += count;
+      itoa(total_count, countstr, 10);
       strcpy(dest, msg);
       strcat(dest, countstr);
       strcat(dest, msg2);
