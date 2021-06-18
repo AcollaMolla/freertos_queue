@@ -100,15 +100,28 @@ void ReadFromQueue1(void *parameter){
   }
 }
 
-void PrintFromQueue2(void *parameter){
-  char buf[buf_len];
-  int delay = 1000;
+void PrintOnLCD(void *parameter){
   int lcdColumns = 16;
   int lcdRows = 2;
   LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
   lcd.begin();
   lcd.backlight();
   lcd.setCursor(0, 0);
+  blink_count_t buf;
+
+  while(1){
+    if(xQueueReceive(blink_msg, (void *)&buf, 0)==pdTRUE){
+      Serial.print("buf.count: ");
+      Serial.println(buf.count);
+      lcd.print(buf.count);
+      lcd.setCursor(0,0);
+    }
+  }
+}
+
+void PrintFromQueue2(void *parameter){
+  char buf[buf_len];
+  int delay = 1000;
   
   while(1){
     if(xQueueReceive(queue_2, (void *)&buf, 0)==pdTRUE){
@@ -119,8 +132,6 @@ void PrintFromQueue2(void *parameter){
       else{
         Serial.print("Echo: ");
         Serial.println(buf);
-        lcd.print(buf);
-        lcd.setCursor(9,0);
       }
     }
   }
@@ -188,7 +199,16 @@ xTaskCreatePinnedToCore(BlinkLED,
  1,
  NULL,
  app_cpu);
+
+ xTaskCreatePinnedToCore(PrintOnLCD,
+ "Print messages from queue to LCD",
+ 1600,
+ NULL,
+ 1,
+ NULL,
+ app_cpu);
 }
+
 
 void loop() {
 
