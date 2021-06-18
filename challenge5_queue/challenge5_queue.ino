@@ -1,3 +1,4 @@
+#include <LiquidCrystal_I2C.h>
 #if CONFIG_FREERTOS_UNICORE
 static const BaseType_t app_cpu = 0;
 #else
@@ -77,6 +78,7 @@ void BlinkLED(void *parameter){
 void ReadFromQueue1(void *parameter){
   int buf;
   
+  
   while(1){
     if(xQueueReceive(queue_1, (void *)&buf, 0)==pdTRUE){
       Serial.print("[INFO]Blink rate: ");
@@ -89,6 +91,13 @@ void ReadFromQueue1(void *parameter){
 void PrintFromQueue2(void *parameter){
   char buf[buf_len];
   int delay = 1000;
+  int lcdColumns = 16;
+  int lcdRows = 2;
+  LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
+  lcd.begin();
+  lcd.backlight();
+  lcd.setCursor(0, 0);
+  lcd.print("Hello world!");
   
   while(1){
     if(xQueueReceive(queue_2, (void *)&buf, 0)==pdTRUE){
@@ -97,8 +106,12 @@ void PrintFromQueue2(void *parameter){
         xQueueSend(queue_1, (void *)&delay, 0);
        }
       else{
+        lcd.clear();
+        lcd.setCursor(0, 0);
         Serial.print("Echo: ");
         Serial.println(buf);
+        lcd.print("Echo: ");
+        lcd.print(buf);
       }
     }
   }
@@ -144,7 +157,7 @@ void setup() {
 
   xTaskCreatePinnedToCore(PrintFromQueue2,
    "Print user input stored in Queue 2",
-   1024,
+   1500,
    NULL,
    1,
    NULL,
