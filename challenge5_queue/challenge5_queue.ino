@@ -10,7 +10,14 @@ static const uint8_t queue_len = 5;
 static const uint8_t buf_len = 255;
 static QueueHandle_t queue_1;
 static QueueHandle_t queue_2;
+static QueueHandle_t blink_msg;
 static int blink_rate = 1000;
+
+struct blink_count_t{
+  int count;
+  String prefix;
+  String suffix;
+};
 
 bool checkStringForDelayCommand(char buf[buf_len]){
   int sum = 0;
@@ -55,15 +62,20 @@ void BlinkLED(void *parameter){
   char msg2[8] = " times!";
   char dest[31];
   char countstr[16];
+  blink_count_t blink_count;
 
   while(1){
     if(count == 100){
+      blink_count.count = total_count;
+      blink_count.prefix = "Blinked  ";
+      blink_count.suffix = " times!";
       total_count += count;
       itoa(total_count, countstr, 10);
       strcpy(dest, msg);
       strcat(dest, countstr);
       strcat(dest, msg2);
       xQueueSend(queue_2, (void *)&(dest), 0);
+      xQueueSend(blink_msg, (void *)&blink_count, 0);
       count = 0;
     }
     pinMode(led_pin, OUTPUT);
@@ -143,6 +155,7 @@ void setup() {
 
   queue_1 = xQueueCreate(queue_len, sizeof(int));
   queue_2 = xQueueCreate(queue_len, sizeof(char[255]));
+  blink_msg = xQueueCreate(queue_len, sizeof(blink_count_t));
 
   xTaskCreatePinnedToCore(readUserInput,
     "Read user input",
