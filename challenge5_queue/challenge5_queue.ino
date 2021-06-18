@@ -97,7 +97,6 @@ void PrintFromQueue2(void *parameter){
   lcd.begin();
   lcd.backlight();
   lcd.setCursor(0, 0);
-  lcd.print("Hello world!");
   
   while(1){
     if(xQueueReceive(queue_2, (void *)&buf, 0)==pdTRUE){
@@ -106,12 +105,10 @@ void PrintFromQueue2(void *parameter){
         xQueueSend(queue_1, (void *)&delay, 0);
        }
       else{
-        lcd.clear();
-        lcd.setCursor(0, 0);
         Serial.print("Echo: ");
         Serial.println(buf);
-        lcd.print("Echo: ");
         lcd.print(buf);
+        lcd.setCursor(9,0);
       }
     }
   }
