@@ -1,4 +1,11 @@
 #include <LiquidCrystal_I2C.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
+uint8_t temprature_sens_read();
+#ifdef __cplusplus
+}
+#endif
 #if CONFIG_FREERTOS_UNICORE
 static const BaseType_t app_cpu = 0;
 #else
@@ -14,6 +21,7 @@ static QueueHandle_t blink_msg;
 static int blink_rate = 1000;
 
 struct blink_count_t{
+  int id;
   int count;
   String prefix;
   String suffix;
@@ -63,12 +71,15 @@ void BlinkLED(void *parameter){
   char dest[31];
   char countstr[16];
   blink_count_t blink_count;
+  uint8_t temprature_sens_read();
 
   while(1){
     if(count == 100){
+      blink_count.id = 0;
       blink_count.count = total_count;
       blink_count.prefix = "Blinks: ";
       blink_count.suffix = "#";
+
       total_count += count;
       itoa(total_count, countstr, 10);
       strcpy(dest, msg);
@@ -77,7 +88,14 @@ void BlinkLED(void *parameter){
       xQueueSend(queue_2, (void *)&(dest), 0);
       xQueueSend(blink_msg, (void *)&blink_count, 0);
       count = 0;
+    }else{
+      blink_count.id = 1;
+      blink_count.count = (temprature_sens_read()-32)/1.8;
+      blink_count.prefix = "Temp: ";
+      blink_count.suffix = "C";
+      xQueueSend(blink_msg, (void *)&blink_count, 0);
     }
+    
     pinMode(led_pin, OUTPUT);
     digitalWrite(led_pin, HIGH);
     vTaskDelay(blink_rate/portTICK_PERIOD_MS);
@@ -111,17 +129,17 @@ void PrintOnLCD(void *parameter){
   blink_count_t buf;
 
   while(1){
-    if(xQueueReceive(blink_msg, (void *)&buf, 0)==pdTRUE){
-      Serial.print("buf.count: ");
+    if(xQueueReceive(blink_msg, (void *)&buf, 5)==pdTRUE){
+      Serial.print("buf.msg: ");
+      Serial.print(buf.prefix);
+      Serial.print(buf.id);
+      Serial.print(" ");
       Serial.println(buf.count);
+      lcd.setCursor(0, buf.id);
       sprintf(msg, "%s %d %3s", buf.prefix, buf.count, buf.suffix);
-      //sprintf(msg, "Temp: %-7d", buf.count);
-      //sprintf(msg, msg, buf.suffix); 
-      /*lcd.print(buf.prefix);
-      lcd.print(buf.count);
-      lcd.print(buf.suffix);*/
       lcd.print(msg);
       lcd.setCursor(0,0);
+      buf = {};
     }
   }
 }
@@ -211,7 +229,7 @@ xTaskCreatePinnedToCore(BlinkLED,
  "Print messages from queue to LCD",
  1700,
  NULL,
- 1,
+ 2,
  NULL,
  app_cpu);
 }
