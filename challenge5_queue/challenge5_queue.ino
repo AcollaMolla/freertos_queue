@@ -67,8 +67,8 @@ void BlinkLED(void *parameter){
   while(1){
     if(count == 100){
       blink_count.count = total_count;
-      blink_count.prefix = "Blinked  ";
-      blink_count.suffix = " times!";
+      blink_count.prefix = "Blinks: ";
+      blink_count.suffix = "#";
       total_count += count;
       itoa(total_count, countstr, 10);
       strcpy(dest, msg);
@@ -103,6 +103,7 @@ void ReadFromQueue1(void *parameter){
 void PrintOnLCD(void *parameter){
   int lcdColumns = 16;
   int lcdRows = 2;
+  char msg[20];
   LiquidCrystal_I2C lcd(0x27, lcdColumns, lcdRows);
   lcd.begin();
   lcd.backlight();
@@ -113,7 +114,13 @@ void PrintOnLCD(void *parameter){
     if(xQueueReceive(blink_msg, (void *)&buf, 0)==pdTRUE){
       Serial.print("buf.count: ");
       Serial.println(buf.count);
+      sprintf(msg, "%s %d %3s", buf.prefix, buf.count, buf.suffix);
+      //sprintf(msg, "Temp: %-7d", buf.count);
+      //sprintf(msg, msg, buf.suffix); 
+      /*lcd.print(buf.prefix);
       lcd.print(buf.count);
+      lcd.print(buf.suffix);*/
+      lcd.print(msg);
       lcd.setCursor(0,0);
     }
   }
@@ -202,7 +209,7 @@ xTaskCreatePinnedToCore(BlinkLED,
 
  xTaskCreatePinnedToCore(PrintOnLCD,
  "Print messages from queue to LCD",
- 1600,
+ 1700,
  NULL,
  1,
  NULL,
